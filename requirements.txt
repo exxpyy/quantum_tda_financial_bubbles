@@ -1,0 +1,9 @@
+numpy
+pandas
+matplotlib
+scipy
+gudhi
+ripser
+scikit-tda
+qiskit
+qiskit-aer
