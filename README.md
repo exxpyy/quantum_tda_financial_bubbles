@@ -56,7 +56,7 @@ These spikes often precede major events (e.g., 2008, 2020).
 **How to read:**  
 - Taller bars indicate larger step-changes in topology.  
 - **“×” markers** denote statistically significant spikes (z-score > 2.0).  
-When **Betti₀ spikes** and **Δ spikes** occur together, they strongly align with **bubble bursts / regime shifts**.
+When **Betti₀ spikes** and **Δ spikes** occur together, they strongly align with **bubble bursts**.
 
 ---
 
