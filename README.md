@@ -4,7 +4,7 @@
 Financial markets can look stable until they hit a tipping point: a **bubble** or **crash**.  
 While traditional indicators (volatility, moving averages, etc.) often lag, **Topological Data Analysis (TDA)** captures deeper geometric changes in the market’s structure.  
 
-This repository applies **classical TDA** (and optionally quantum-inspired methods) to S&P 500 data to identify when the “shape” of the market changes in ways consistent with bubbles.  
+This repository applies **classical TDA** and other quantum methods to S&P 500 data to identify when the “shape” of the market changes in ways consistent with bubbles.  
 
 ---
 
