@@ -1,7 +1,7 @@
 # Quantum TDA for Financial Bubble Detection  
 
 ## Overview  
-Financial markets can look stable until they hit a tipping point — a **bubble** or **crash**.  
+Financial markets can look stable until they hit a tipping point: a **bubble** or **crash**.  
 While traditional indicators (volatility, moving averages, etc.) often lag, **Topological Data Analysis (TDA)** captures deeper geometric changes in the market’s structure.  
 
 This repository applies **classical TDA** (and optionally quantum-inspired methods) to S&P 500 data to identify when the “shape” of the market changes in ways consistent with bubbles.  
@@ -35,7 +35,7 @@ This repository applies **classical TDA** (and optionally quantum-inspired metho
 ## Results & Interpretation
 
 ### 1. Betti Curves over Windows
-**What:** Tracks the number of connected components (**Betti₀**) for each sliding window at several neighborhood radii (ε).  
+Tracks the number of connected components (**Betti₀**) for each sliding window at several neighborhood radii (ε).  
 **Axes:**  
 - **X:** Calendar date (center of each window)  
 - **Y:** Betti₀ (connectivity)
@@ -48,7 +48,7 @@ These spikes often precede major events (e.g., 2008, 2020).
 ---
 
 ### 2. Pairwise L² Deltas (Spikes Flagged)
-**What:** Measures how abruptly the topology changes between consecutive windows via the L² distance between their Betti curves.  
+Measures how abruptly the topology changes between consecutive windows via the L² distance between their Betti curves.  
 **Axes:**  
 - **X:** Date (of the later window)  
 - **Y:** Δ (L² distance between consecutive Betti curves)
@@ -61,7 +61,7 @@ When **Betti₀ spikes** and **Δ spikes** occur together, they strongly align w
 ---
 
 ### 3. Quantum Betti Estimation (QPE)
-**What:** Builds a Vietoris–Rips Laplacian for one window and uses **Quantum Phase Estimation (QPE)** on a simulator to estimate the Betti number from the Laplacian’s spectrum (zero eigenvalues ↔ connected components).
+Builds a Vietoris–Rips Laplacian for one window and uses **Quantum Phase Estimation (QPE)** on a simulator to estimate the Betti number from the Laplacian’s spectrum (zero eigenvalues ↔ connected components).
 
 **What the QPE bar chart shows**  
 - **Classical** (left): Betti₀ from persistent homology (ripser) — the true connectivity for that window.  
