@@ -94,6 +94,14 @@ def main():
     ap.add_argument("--lp", type=int, default=2, help="L^p for pairwise distances")
     ap.add_argument("--z", type=float, default=2.0, help="Z-threshold for spike detection")
     ap.add_argument("--save-plot", action="store_true", help="Save plots to plots/ directory")
+
+    ap.add_argument("--focus-start", type=str, default=None,
+                help="Zoom: start date (YYYY-MM-DD). Example: 2019-06-01")
+    ap.add_argument("--focus-end", type=str, default=None,
+                    help="Zoom: end date (YYYY-MM-DD). Example: 2021-06-01")
+    ap.add_argument("--annotate-topk", type=int, default=0,
+                    help="Annotate top-K spikes in the Δ plot (0=off)")
+
     args = ap.parse_args()
 
     dates, prices = load_dates_and_prices(args.csv, price_pref=args.price_col)
@@ -110,11 +118,20 @@ def main():
     n_embed = X.shape[0]
     if dates is not None:
         dates_embedded = dates.iloc[args.d * (args.m - 1):].reset_index(drop=True)
-       
-        center_offsets = np.arange(0, n_embed - args.w + 1) + (args.w // 2)
-        window_dates = dates_embedded.iloc[center_offsets].to_numpy()
+
+
+        end_offsets = np.arange(args.w - 1, n_embed)                 
+        end_offsets = end_offsets[: (n_embed - args.w + 1)]       
+
+
+        window_dates = pd.to_datetime(dates_embedded.iloc[end_offsets].values)
+
+        first_dt = pd.to_datetime(window_dates[0]).date()
+        last_dt  = pd.to_datetime(window_dates[-1]).date()
+        print(f"[dates] right-aligned; first={first_dt}, last={last_dt}")
     else:
         window_dates = None
+
 
 
     curves = []
@@ -136,6 +153,106 @@ def main():
 
     print(f"[info] windows: {len(windows)}, eps grid: {args.eps}")
     print(f"[info] detected spike indices (potential crash on following window): {spike_idx.tolist()}")
+
+    if window_dates is not None and (args.focus_start or args.focus_end):
+
+        start = pd.to_datetime(args.focus_start) if args.focus_start else window_dates[0]
+        end   = pd.to_datetime(args.focus_end)   if args.focus_end   else window_dates[-1]
+
+
+        mask_full = (window_dates >= start) & (window_dates <= end)
+        mask_delta = (window_dates[1:] >= start) & (window_dates[1:] <= end)
+
+
+        if mask_full.any():
+            Path("plots").mkdir(exist_ok=True)
+
+            # betti curves zoom
+            fig, ax = plt.subplots()
+            x_zoom = window_dates[mask_full]
+            curves_zoom = curves[mask_full, :]
+            for j in range(curves_zoom.shape[1]):
+                ax.plot(x_zoom, curves_zoom[:, j], label=f"betti@eps={args.eps[j]}")
+            ax.set_title("Betti curves (zoom)")
+            ax.set_ylabel("Betti₀ (connected components)")
+            ax.set_xlabel("Date")
+            ax.legend()
+
+            # weekly ticks for visibility
+            ax.xaxis.set_major_locator(mdates.WeekdayLocator(byweekday=mdates.MO, interval=1))
+            ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))  # or '%Y-W%U' for week number
+            fig.autofmt_xdate()
+
+            outz1 = "plots/betti_curves_zoom.png"
+            fig.savefig(outz1, dpi=160, bbox_inches="tight")
+            print(f"[save] {outz1}")
+
+
+            fig, ax = plt.subplots(figsize=(8.5, 4.8))
+
+            x_delta_zoom = window_dates[1:][mask_delta]
+            dist_zoom = dist[mask_delta]
+
+            # draw line + points so the series is readable
+            ax.plot(x_delta_zoom, dist_zoom, linewidth=2, marker="o", markersize=4)
+
+            # mark statistically significant spikes within the zoom (the “×” marks)
+            if spike_idx.size:
+                spike_dates_all = window_dates[1:][spike_idx]
+                in_zoom = (spike_dates_all >= start) & (spike_dates_all <= end)
+                spike_dates = spike_dates_all[in_zoom]
+                spike_vals  = dist[spike_idx][in_zoom]
+                if len(spike_dates):
+                    ax.scatter(spike_dates, spike_vals, marker="x", s=60, linewidths=2)
+
+
+            if args.annotate_topk and len(dist_zoom):
+                topk = min(args.annotate_topk, len(dist_zoom))
+                idx_local = np.argsort(dist_zoom)[-topk:] 
+                idx_local = idx_local[np.argsort(x_delta_zoom[idx_local])]  
+
+                offsets = [10, 18, 26, 14, 22]
+                for i, j in enumerate(idx_local):
+                    dt = x_delta_zoom[j]
+                    val = dist_zoom[j]
+                    ax.annotate(
+                        f"{dt.strftime('%Y-%m-%d')}\nΔ={val:.2f}",
+                        xy=(dt, val),
+                        xytext=(0, offsets[i % len(offsets)]),
+                        textcoords="offset points",
+                        ha="center",
+                        fontsize=8,
+                        bbox=dict(boxstyle="round,pad=0.2", fc="white", ec="0.7", lw=0.8),
+                        arrowprops=dict(arrowstyle="-", lw=0.8)
+                    )
+
+
+            ax.set_title(f"Pairwise L^{args.lp} deltas (zoom)", pad=10)
+            ax.set_ylabel("Δ (topology change)")
+            ax.set_xlabel("Date")
+
+            # weekly ticks mondays with compact labels
+            ax.set_xlim(start, end)
+            ax.xaxis.set_major_locator(mdates.WeekdayLocator(byweekday=mdates.MO, interval=1))
+            ax.xaxis.set_major_formatter(mdates.DateFormatter('%b %d'))
+
+
+            ax.grid(True, which="major", axis="both", alpha=0.25, linestyle="--", linewidth=0.8)
+            for spine in ["top", "right"]:
+                ax.spines[spine].set_visible(False)
+
+
+            ymin = max(0, np.nanmin(dist_zoom) - 0.05)
+            ymax = np.nanmax(dist_zoom) + 0.15
+            ax.set_ylim(ymin, ymax)
+
+            fig.autofmt_xdate(rotation=30, ha="right")
+            fig.tight_layout()
+
+            outz2 = "plots/crash_spikes_zoom.png"
+            fig.savefig(outz2, dpi=180, bbox_inches="tight")
+            print(f"[save] {outz2}")
+
 
 
     if HAVE_GUDHI and HAVE_QISKIT:
