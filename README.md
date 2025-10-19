@@ -41,8 +41,8 @@ This repository applies **classical TDA** (and optionally quantum-inspired metho
 - **Y:** Betti₀ (connectivity)
 
 **How to read:**  
-- Values near **1** → cohesive, stable market behavior.  
-- **Spikes** → fragmentation in the geometry, consistent with instability or bubble formation.  
+- Values near **1** show cohesive, stable market behavior.  
+- **Spikes** show fragmentation in the geometry, consistent with instability or bubble formation.  
 These spikes often precede major events (e.g., 2008, 2020).
 
 ---
